@@ -1,0 +1,179 @@
+<template>
+    <lightning-card title="Twitter Integration" icon-name="custom:custom19"> 
+
+        <!-- Buttons -->
+        <div class="slds-grid slds-wrap">
+            <div class="slds-p-around_x-small">
+                <lightning-button label="Post Tweet" variant="brand" onclick={handlePostTweet}></lightning-button>
+            </div>
+            <div class="slds-p-around_x-small">
+                <lightning-button label="Delete Tweet" variant="destructive" onclick={handleDeleteTweet}></lightning-button>
+            </div>
+            <div class="slds-p-around_x-small">
+                <lightning-button label="Get User Details" variant="neutral" onclick={handleGetUserDetails}></lightning-button>
+            </div>
+        </div>
+
+        <!-- Modal after button(s) click (1st Modal) -->
+        <template if:true={isButtonClicked}>
+
+            <!-- Post Tweet Modal -->
+            <template lwc:if={isPostTweetModalOpen}>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Select Tweet Type</h2>
+                        </header>
+
+                        <template if:true={isLoading}>
+                            <div class="slds-spinner_container" style="height: 100px; position:relative">
+                                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                            </div>
+                        </template>
+
+                        <template if:false={isLoading}>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <lightning-radio-group name="tweetType"
+                                                label="Select Tweet Type"
+                                                options={tweetOptions}
+                                                onchange={handleTweetTypeChange}
+                                                value={selectedTweetType}
+                                                type="radio">
+                                </lightning-radio-group>
+                            </div>
+                        </template>
+                        <footer class="slds-modal__footer slds-grid slds-grid_align-end">
+                            <div class="slds-col slds-p-right_small">
+                                <lightning-button label="Cancel" onclick={closeModal}></lightning-button>
+                            </div>
+                            <div class="slds-col">
+                                <lightning-button label="Next" variant="brand" onclick={handleNext}></lightning-button>
+                            </div>
+                        </footer>            
+                    </div>
+                </section>            
+            </template>
+
+            <!-- Delete Modal -->
+            <template lwc:elseif={isDeleteModalOpen}>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+                <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <h2 class="slds-text-heading_medium slds-hyphenate">Delete Tweet</h2>
+                        </header>
+
+                        <template if:true={isLoading}>
+                            <div class="slds-spinner_container" style="height: 100px; position:relative">
+                                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                            </div>
+                        </template>
+
+                        <template if:false={isLoading}>
+                            <div class="slds-modal__content slds-p-around_medium">
+                                <lightning-input label="Enter Tweet ID" placeholder="Enter Tweet Id here...." type="text" value={deleteTweetId} onchange={handleDeleteTweetIdChange}></lightning-input>
+                            </div>
+                        </template>
+                        <footer class="slds-modal__footer slds-grid slds-grid_align-end">
+                            <div class="slds-col slds-p-right_small">
+                                <lightning-button label="Cancel" onclick={closeModal}></lightning-button>
+                            </div>
+                            <div class="slds-col">
+                                <lightning-button label="Delete" variant="destructive" onclick={handleDeleteTweetButton}></lightning-button>
+                            </div>
+                        </footer>
+                    </div>
+                </section>
+            </template>
+
+            <!-- User Details -->
+            <template lwc:elseif={isGetUserDetailsModalOpen}>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+                <section role="dialog" tabindex="-1" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <h2 class="slds-text-heading_medium slds-hyphenate"> User Details</h2>
+                        </header>
+
+                        <template if:true={isLoading}>
+                            <div class="slds-spinner_container" style="height: 100px; position:relative">
+                                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                            </div>
+                        </template>
+
+                        <template if:false={isLoading}>
+                            <div class="slds-modal__content slds-p-around_medium">
+                                <template if:true={usersData}>
+                                    <p><b>Id:</b>&nbsp;{usersData.data.id}</p>
+                                    <p><b>Name:</b>&nbsp;{usersData.data.name}</p>
+                                    <p><b>Username:</b>&nbsp;{usersData.data.username}</p>
+                                </template>
+                            </div>   
+                        </template>                     
+                        
+                        <footer class="slds-modal__footer slds-grid slds-grid_align-end">
+                            <div class="slds-col slds-p-right_medium">
+                                <lightning-button label="OK" onclick={closeModal}></lightning-button>
+                            </div>
+                        </footer>
+                    </div>
+                </section>
+            </template>
+        </template>
+        
+
+        <!-- Post Tweet Modal (2nd Modal) -->
+        <template if:true={isPostTweetSelected}>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <h2 class="slds-text-heading_medium slds-hyphenate"> {modalHeading} </h2>
+                    </header>
+
+                    <template if:true={isLoading}>
+                        <div class="slds-spinner_container" style="height: 200px; position:relative">
+                            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                        </div>
+                    </template>
+                    
+                    <template if:false={isLoading}>
+                        <div class="slds-modal__content slds-p-around_medium">
+                            <div class="slds-p-around_medium">
+                                <p class="slds-text-heading_small slds-text-color_strong">Enter Tweet Message:</p>
+                                <lightning-textarea label-hidden value={tweetMessage} onchange={handleTweetMessageChange}></lightning-textarea>
+                            </div>
+
+                            <!-- Tweet with Media (File Upload) -->
+                            <template if:true={isTweetWithMediaSelected}>
+                                <div class="slds-p-around_medium">
+                                    <lightning-input
+                                        type="file" 
+                                        label="Attach Media" 
+                                        name="fileUploader" 
+                                        accept={acceptedFormats}
+                                        onchange={handleUploadFinished} 
+                                    >
+                                    </lightning-input> 
+                                    <template if:true={uploadedFile}>
+                                        <p style="color:red;">{uploadedFile.name}</p>
+                                    </template>
+                                </div>
+                            </template>                        
+                        </div>
+                    </template>
+                    <footer class="slds-modal__footer slds-grid">
+                        <div class="slds-col slds-text-align_left">
+                            <lightning-button label="Previous" onclick={handlePrevious}></lightning-button>
+                        </div>
+                        <div class="slds-col slds-grid_align-end slds-text-align_right">
+                            <lightning-button label="Post" variant="brand" onclick={handlePostTweetButton}></lightning-button>
+                        </div>
+                    </footer>
+                    
+                </div>
+            </section>
+        </template>
+    </lightning-card> 
+</template>
